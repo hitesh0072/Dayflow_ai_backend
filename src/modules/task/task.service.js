@@ -152,6 +152,10 @@ export const deleteTaskService = async (userId, taskId) => {
 };
 
 export const getTaskStatsService = async (userId) => {
+  // 1. Get all categories for the user
+  const allCategories = await Category.find({ createdBy: userId }).lean();
+
+  // 2. Get task counts grouped by category
   const stats = await Task.aggregate([
     { $match: { createdBy: userId } },
     {
@@ -160,31 +164,25 @@ export const getTaskStatsService = async (userId) => {
         count: { $sum: 1 },
       },
     },
-    {
-      $lookup: {
-        from: "categories",
-        localField: "_id",
-        foreignField: "_id",
-        as: "categoryDetails",
-      },
-    },
-    {
-      $unwind: "$categoryDetails",
-    },
-    {
-      $project: {
-        _id: 0,
-        categoryId: "$_id",
-        name: "$categoryDetails.name",
-        color: "$categoryDetails.color",
-        icon: "$categoryDetails.icon",
-        count: 1,
-      },
-    },
   ]);
 
-  return stats;
-};
+  // 3. Map counts to a lookup object for easier access
+  const statsMap = stats.reduce((acc, curr) => {
+    acc[curr._id.toString()] = curr.count;
+    return acc;
+  }, {});
+
+  // 4. Merge all categories with their counts (default 0)
+  const result = allCategories.map((category) => ({
+    categoryId: category._id,
+    name: category.name,
+    color: category.color,
+    icon: category.icon,
+    count: statsMap[category._id.toString()] || 0,
+  }));
+
+  return result;
+};;
 
 export const updateTaskStatusService = async (userId, taskId, status) => {
   if (!['active', 'overdue', 'completed'].includes(status)) {
