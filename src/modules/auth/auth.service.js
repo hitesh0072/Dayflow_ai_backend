@@ -84,13 +84,11 @@ export const registerService = async (userData) => {
 
   // Send OTP email
 
-  sendEmail(email, "Verify Your Email", getVerificationEmailTemplate(otp))
-    .then(() => {
-      console.log("Email sent successfully");
-    })
-    .catch((error) => {
-      console.error("Failed to send email:", error);
-    });
+  await sendEmail(
+    email,
+    "Verify Your Email",
+    getVerificationEmailTemplate(otp),
+  );
 
   return {
     message: "Registration successful. Please check your email for OTP.",
@@ -247,17 +245,11 @@ export const resendOtpService = async (email) => {
   await user.save();
 
   // Send OTP email
-  sendEmail(
+  await sendEmail(
     email,
     "Resend Verification Email",
     getVerificationEmailTemplate(otp),
-  )
-    .then(() => {
-      console.log("Email sent successfully");
-    })
-    .catch((error) => {
-      console.error("Failed to send email:", error);
-    });
+  );
 
   return { message: "OTP resent successfully. Please check your email." };
 };
